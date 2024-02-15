@@ -1,34 +1,40 @@
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.Scanner;
 
 public class DynamicInsertApp {
 
     public static void main(String[] args) {
         Connection connection = null;
-        Statement statement = null;
-        ResultSet resultSet = null;
+        PreparedStatement pstmt = null;
+        Scanner scanner = null;
 
         try {
             connection = JDBCutil.getJdbcConnection();
-
-            if (connection != null)
-                statement = connection.createStatement();
-
-            if (statement != null)
-                resultSet = statement.executeQuery("select sid,sname,sage,saddress from IPLTeam");
-
-            if (resultSet != null) {
-                System.out.printf("%-2s%14s%12s%15s","SID","SNAME","SAGE","SADDRESS");
-                System.out.println();
-                while (resultSet.next()) {
-                    System.out.printf("%2d%15s%12d%15s", resultSet.getInt(1), resultSet.getString(2),
-                            resultSet.getInt(3), resultSet.getString(4));
-                    System.out.println();
-                }
+            String sqlInsertQuery = "Insert into IPLTEAM(`sname`,`sage`,`saddress`) values(?,?,?)";
+            if(connection != null){
+               pstmt = connection.prepareStatement(sqlInsertQuery);
             }
+            if(pstmt != null){
+                scanner = new Scanner(System.in);
+                System.out.println("Please enter the name of the player :: ");
+                String sname = scanner.next();
+                System.out.println("Please enter age of the player :: ");
+                int sage = scanner.nextInt();
+                System.out.println("Please enter team of the player :: ");
+                String saddress = scanner.next();
+
+                pstmt.setString(1,sname);
+                pstmt.setInt(2,sage);
+                pstmt.setString(3,saddress);
+
+                System.out.println(sqlInsertQuery);
+
+                //execute the query
+                int rowCount = pstmt.executeUpdate();
+                System.out.println("Rows updated :: "+rowCount);
+            }
+
         }catch(IOException ie) {
             ie.printStackTrace();
         }catch (SQLException se) {
@@ -37,8 +43,9 @@ public class DynamicInsertApp {
             e.printStackTrace();
         } finally {
             try {
-                JDBCutil.cleanUp(connection, statement, resultSet);
-                System.out.println("closing the resources...");
+                JDBCutil.cleanUp(connection, pstmt, null);
+                scanner.close();
+                System.out.println("Closing the resource...");
             } catch (SQLException e) {
                 e.printStackTrace();
             }
